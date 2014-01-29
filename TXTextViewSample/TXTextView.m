@@ -1,9 +1,9 @@
 #import "TXTextView.h"
 
-#define HELP_HTML_LAYOUT @"<html><head><meta name=\"viewport\" content=\"width=device-width; initial-scale=1.0; maxium-scale=1.0; user-scalable=no;\"><style type='text/css'>#wrap {height: 100%%; width: 100%%; overflow-y: scroll; -webkit-overflow-scrolling: touch;} #content {font-size:%fpt; color:#555; line-height:%fpx; font-family:arial;} </style></head><body><div id=\"wrap\"><div id=\"content\" contenteditable=\"%@\"></div></div><script>var text = document.getElementById('content'); text.onkeyup = function() { location.href = 'txtextview://changed'; }; function setText(innerText) { text.innerText = innerText; }</script></body></html>"
+#define HELP_HTML_LAYOUT @"<html><head><meta name=\"viewport\" content=\"width=device-width; initial-scale=1.0; maxium-scale=1.0; user-scalable=no;\"><style type='text/css'>#wrap {height: 100%%; width: 100%%; overflow-y: scroll; -webkit-overflow-scrolling: touch;} #content {font-size:%fpt; color:#555; line-height:%fpt; font-family:arial;} </style></head><body><div id=\"wrap\"><div id=\"content\" contenteditable=\"%@\"></div></div><script>var text = document.getElementById('content'); text.onkeyup = function() { location.href = 'txtextview://changed'; }; function setText(innerText) { text.innerText = innerText; }</script></body></html>"
 
 static CGFloat const kDefaultFontSize = 17.0;
-static CGFloat const kDefaultLineSpacingRatio = 1.2;
+static CGFloat const kDefaultLineSpacingRatio = 0.2;
 
 @interface TXTextView()
 
@@ -14,6 +14,14 @@ static CGFloat const kDefaultLineSpacingRatio = 1.2;
 @implementation TXTextView
 
 @synthesize font = _font, lineSpacing = _lineSpacing;
+
+- (id)init {
+    self = [super init];
+    if (self) {
+        self.backgroundColor = [UIColor clearColor];
+    }
+    return self;
+}
 
 - (id)initWithText:(NSString *)text withFont:(UIFont *)font withLineSpacing:(CGFloat)lineSpacing {
     self = [super init];
@@ -62,6 +70,8 @@ static CGFloat const kDefaultLineSpacingRatio = 1.2;
 - (UIWebView *)webView {
     if (_webView == nil) {
         _webView = [[UIWebView alloc] init];
+        _webView.backgroundColor = [UIColor clearColor];
+        _webView.opaque = NO;
         _webView.autoresizingMask = (UIViewAutoresizingFlexibleLeftMargin |
                                      UIViewAutoresizingFlexibleWidth |
                                      UIViewAutoresizingFlexibleRightMargin |
@@ -79,7 +89,7 @@ static CGFloat const kDefaultLineSpacingRatio = 1.2;
 - (void)drawRect:(CGRect)rect {
     [self.webView loadHTMLString:[NSString stringWithFormat:HELP_HTML_LAYOUT,
                                   self.font.pointSize,
-                                  self.lineSpacing,
+                                  (self.font.pointSize + self.lineSpacing),
                                   (self.editable) ? @"true" : @"false"]
                          baseURL:nil];
 
@@ -99,7 +109,5 @@ static CGFloat const kDefaultLineSpacingRatio = 1.2;
     }
     return YES;
 }
-
-
 
 @end
