@@ -7,7 +7,10 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "TXTextView.h"
 
 @interface ViewController : UIViewController
+
+@property (weak, nonatomic) IBOutlet TXTextView *textView;
 
 @end

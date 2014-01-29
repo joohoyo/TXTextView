@@ -1,13 +1,13 @@
 #import "TXTextView.h"
 
-#define HELP_HTML_LAYOUT @"<html><head><meta name=\"viewport\" content=\"width=device-width; initial-scale=1.0; maxium-scale=1.0; user-scalable=no;\"><style type='text/css'>#wrap {height: 100%%; width: 100%%; overflow-y: scroll; -webkit-overflow-scrolling: touch;} #content {font-size:%fpt; color:#555; line-height:%fpt; font-family:arial;} </style></head><body><div id=\"wrap\"><div id=\"content\" contenteditable=\"%@\"></div></div><script>var text = document.getElementById('content'); text.onkeyup = function() { location.href = 'txtextview://changed'; }; function setText(innerText) { text.innerText = innerText; }</script></body></html>"
+#define HELP_HTML_LAYOUT @"<html><head><meta name=\"viewport\" content=\"width=device-width; initial-scale=1.0; maxium-scale=1.0; user-scalable=no;\"><style type='text/css'>body, div { margin: 0; padding: 0; } #wrap {height: 100%%; width: 100%%; overflow: %@; -webkit-overflow-scrolling: touch;} #content {font-size:%fpt; color:#555; line-height:%fpt; font-family:arial;} </style></head><body><div id=\"wrap\"><div id=\"content\" contenteditable=\"%@\"></div></div><script>var text = document.getElementById('content'); text.onkeyup = function() { location.href = 'txtextview://changed'; }; function setText(innerText) { text.innerText = innerText; } function getHeight() { return document.getElementById('content').offsetHeight; }</script></body></html>"
 
 static CGFloat const kDefaultFontSize = 17.0;
 static CGFloat const kDefaultLineSpacingRatio = 0.2;
 
 @interface TXTextView()
-
 @property (nonatomic, strong) UIWebView *webView;
+
 
 @end
 
@@ -90,6 +90,7 @@ static CGFloat const kDefaultLineSpacingRatio = 0.2;
         _webView = [[UIWebView alloc] init];
         _webView.backgroundColor = [UIColor clearColor];
         _webView.opaque = NO;
+        _webView.scrollView.scrollEnabled = NO;
         _webView.autoresizingMask = (UIViewAutoresizingFlexibleLeftMargin |
                                      UIViewAutoresizingFlexibleWidth |
                                      UIViewAutoresizingFlexibleRightMargin |
@@ -106,18 +107,40 @@ static CGFloat const kDefaultLineSpacingRatio = 0.2;
 #pragma mark - View Life Cycle
 - (void)drawRect:(CGRect)rect {
     [self.webView loadHTMLString:[NSString stringWithFormat:HELP_HTML_LAYOUT,
+                                  [self overflowCode],
                                   self.font.pointSize,
                                   (self.font.pointSize + self.lineSpacing),
                                   (self.editable) ? @"true" : @"false"]
                          baseURL:nil];
-
+    
     self.webView.frame = self.bounds;
+}
+
+- (NSString *)overflowCode {
+    switch (_overflow) {
+        case TXTextViewOverflowVisible:
+            return @"visible";
+        case TXTextViewOverflowHidden:
+            return @"hidden";
+        case TXTextViewOverflowScroll:
+            return @"scroll";
+        default:
+            return @"visible";
+    }
 }
 
 - (void)webViewDidFinishLoad:(UIWebView *)webView {
     NSString *escapedText = [self.text stringByReplacingOccurrencesOfString:@"\n" withString:@"\\n"];
     escapedText = [escapedText stringByReplacingOccurrencesOfString:@"'" withString:@"\\'"];
 	[self.webView stringByEvaluatingJavaScriptFromString:[NSString stringWithFormat:@"setText('%@');", escapedText]];
+    
+    if (_overflow == TXTextViewOverflowVisible) {
+        self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, self.frame.size.width, [self getTextHeight]);
+    }
+}
+
+- (CGFloat)getTextHeight {
+    return [[self.webView stringByEvaluatingJavaScriptFromString:@"getHeight()"] floatValue];
 }
 
 #pragma mark - WebView Delegate
