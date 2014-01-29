@@ -23,9 +23,27 @@ static CGFloat const kDefaultLineSpacingRatio = 0.2;
     return self;
 }
 
+- (id)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self) {
+        self.backgroundColor = [UIColor clearColor];
+    }
+    return self;
+}
+
+- (id)initWithCoder:(NSCoder *)aDecoder {
+    self = [super initWithCoder:aDecoder];
+    if (self) {
+        self.backgroundColor = [UIColor clearColor];
+    }
+    return self;
+}
+
 - (id)initWithText:(NSString *)text withFont:(UIFont *)font withLineSpacing:(CGFloat)lineSpacing {
     self = [super init];
     if (self) {
+        self.backgroundColor = [UIColor clearColor];
+        
         _text = text;
         _font = font;
         _lineSpacing = lineSpacing;
