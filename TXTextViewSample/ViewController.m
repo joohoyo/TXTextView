@@ -15,6 +15,10 @@
     
     self.view.backgroundColor = [UIColor orangeColor];
     
+    self.textView.overflow = TXTextViewOverflowVisible;
+//    self.textView.overflow = TXTextViewOverflowHidden;
+//    self.textView.overflow = TXTextViewOverflowScroll;
+    
     self.textView.text = @"Lorem ipsum dolor sit er elit lamet, consectetaur \
         cillium adipisicing pecu, sed do eiusmod tempor incididunt ut labore \
         et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud \
@@ -26,13 +30,7 @@
     
     self.textView.lineSpacing = 10.0;
     
-    self.textView.overflow = TXTextViewOverflowVisible;
-//    self.textView.overflow = TXTextViewOverflowHidden;
-//    self.textView.overflow = TXTextViewOverflowScroll;
-    
     self.textView.backgroundColor = [UIColor yellowColor];
-    
-
 }
 
 @end

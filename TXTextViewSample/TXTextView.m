@@ -6,8 +6,9 @@ static CGFloat const kDefaultFontSize = 17.0;
 static CGFloat const kDefaultLineSpacingRatio = 0.2;
 
 @interface TXTextView()
-@property (nonatomic, strong) UIWebView *webView;
 
+@property (nonatomic, strong) UIWebView *webView;
+@property (atomic) BOOL isLoading;
 
 @end
 
@@ -47,6 +48,8 @@ static CGFloat const kDefaultLineSpacingRatio = 0.2;
         _text = text;
         _font = font;
         _lineSpacing = lineSpacing;
+        
+        [self render];
     }
     return self;
 }
@@ -54,7 +57,7 @@ static CGFloat const kDefaultLineSpacingRatio = 0.2;
 #pragma mark - Getter, Setter
 - (void)setText:(NSString * __strong )text {
      _text = text;
-    [self setNeedsDisplay];
+    [self render];
 }
 
 - (UIFont *)font {
@@ -65,7 +68,7 @@ static CGFloat const kDefaultLineSpacingRatio = 0.2;
 }
 - (void)setFont:(UIFont *)font {
     _font = font;
-    [self setNeedsDisplay];
+    [self render];
 }
 
 - (CGFloat)lineSpacing {
@@ -77,12 +80,17 @@ static CGFloat const kDefaultLineSpacingRatio = 0.2;
 
 - (void)setLineSpacing:(CGFloat)lineSpacing {
     _lineSpacing = lineSpacing;
-    [self setNeedsDisplay];
+    [self render];
 }
 
 - (void)setEditable:(BOOL)editable {
     _editable = editable;
-    [self setNeedsDisplay];
+    [self render];
+}
+
+- (void)setOverflow:(TXTextViewOverflow)overflow {
+    _overflow = overflow;
+    [self render];
 }
 
 - (UIWebView *)webView {
@@ -104,8 +112,14 @@ static CGFloat const kDefaultLineSpacingRatio = 0.2;
     return _webView;
 }
 
-#pragma mark - View Life Cycle
-- (void)drawRect:(CGRect)rect {
+- (void)setFrame:(CGRect)frame {
+    [super setFrame:frame];
+    self.webView.frame = self.bounds;
+}
+
+- (void)render {
+    self.isLoading = YES;
+    
     [self.webView loadHTMLString:[NSString stringWithFormat:HELP_HTML_LAYOUT,
                                   [self overflowCode],
                                   self.font.pointSize,
@@ -113,7 +127,29 @@ static CGFloat const kDefaultLineSpacingRatio = 0.2;
                                   (self.editable) ? @"true" : @"false"]
                          baseURL:nil];
     
-    self.webView.frame = self.bounds;
+    while(self.isLoading) {
+        [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode
+                                 beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
+    }
+
+    [self setTextToWebView];
+    if (_overflow == TXTextViewOverflowVisible) {
+        [self resizeViewByWebViewHeight];
+    }
+}
+
+- (void)setTextToWebView {
+    NSString *escapedText = [self.text stringByReplacingOccurrencesOfString:@"\n" withString:@"\\n"];
+    escapedText = [escapedText stringByReplacingOccurrencesOfString:@"'" withString:@"\\'"];
+    [self.webView stringByEvaluatingJavaScriptFromString:[NSString stringWithFormat:@"setText('%@');", escapedText]];
+}
+
+- (void)resizeViewByWebViewHeight {
+    self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, self.frame.size.width, [self webViewHeight]);
+}
+
+- (CGFloat)webViewHeight {
+    return [[self.webView stringByEvaluatingJavaScriptFromString:@"getHeight()"] floatValue];
 }
 
 - (NSString *)overflowCode {
@@ -129,26 +165,16 @@ static CGFloat const kDefaultLineSpacingRatio = 0.2;
     }
 }
 
-- (void)webViewDidFinishLoad:(UIWebView *)webView {
-    NSString *escapedText = [self.text stringByReplacingOccurrencesOfString:@"\n" withString:@"\\n"];
-    escapedText = [escapedText stringByReplacingOccurrencesOfString:@"'" withString:@"\\'"];
-	[self.webView stringByEvaluatingJavaScriptFromString:[NSString stringWithFormat:@"setText('%@');", escapedText]];
-    
-    if (_overflow == TXTextViewOverflowVisible) {
-        self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, self.frame.size.width, [self getTextHeight]);
-    }
-}
-
-- (CGFloat)getTextHeight {
-    return [[self.webView stringByEvaluatingJavaScriptFromString:@"getHeight()"] floatValue];
-}
-
 #pragma mark - WebView Delegate
 - (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType {
     if ([request.URL.scheme isEqualToString:@"txtextview"]) {
         _text = [_webView stringByEvaluatingJavaScriptFromString:@"document.getElementById('content').innerText"];
     }
     return YES;
+}
+
+- (void)webViewDidFinishLoad:(UIWebView *)webView {
+    self.isLoading = NO;
 }
 
 @end
