@@ -1,20 +1,9 @@
-//
-//  ViewController.m
-//  TXTextViewSample
-//
-//  Created by Jang Jooho on 2014. 1. 29..
-//  Copyright (c) 2014년 Jang Jooho. All rights reserved.
-//
+# TXTextView
+iOS6 UITextView의 lineSpacing가 무시되는 버그를 해결하기 위해 UIWebView로 구현한 TextView입니다.
 
-#import "ViewController.h"
-#import "TXTextView.h"
+http://stackoverflow.com/questions/12562506/nsparagraphstyle-line-spacing-ignored
 
-@interface ViewController ()
-@property (strong, nonatomic) TXTextView *textView;
-@end
-
-@implementation ViewController
-
+````
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -24,5 +13,4 @@
     
     [self.view addSubview:self.textView];
 }
-
-@end
+````
