@@ -1,6 +1,6 @@
 #import "TXTextView.h"
 
-#define HELP_HTML_LAYOUT @"<html><head><meta name=\"viewport\" content=\"width=device-width; initial-scale=1.0; maxium-scale=1.0; user-scalable=no;\"><style type='text/css'>body, div { margin: 0; padding: 0; } #wrap {height: 100%%; width: 100%%; overflow: %@; -webkit-overflow-scrolling: touch;} #content {font-size:%fpt; color:#555; line-height:%fpt; font-family:arial;} </style></head><body><div id=\"wrap\"><div id=\"content\" contenteditable=\"%@\"></div></div><script>var text = document.getElementById('content'); text.onkeyup = function() { location.href = 'txtextview://changed'; }; function setText(innerText) { text.innerText = innerText; } function getHeight() { return document.getElementById('content').offsetHeight; }</script></body></html>"
+#define HTML_LAYOUT @"<html><head><meta name=\"viewport\" content=\"width=device-width; initial-scale=1.0; maxium-scale=1.0; user-scalable=no;\"><style type='text/css'>body, div { margin: 0; padding: 0; } #wrap {height: 100%%; width: 100%%; overflow: %@; -webkit-overflow-scrolling: touch;} #content {font-size:%fpt; color:#555; line-height:%fpt; font-family:arial;} </style></head><body><div id=\"wrap\"><div id=\"content\" contenteditable=\"%@\"></div></div><script>var text = document.getElementById('content'); text.onkeyup = function() { location.href = 'txtextview://changed'; }; function setText(innerText) { text.innerText = innerText; } function getHeight() { return document.getElementById('content').offsetHeight; }</script></body></html>"
 
 static CGFloat const kDefaultFontSize = 17.0;
 static CGFloat const kDefaultLineSpacingRatio = 0.2;
@@ -19,15 +19,19 @@ static CGFloat const kDefaultLineSpacingRatio = 0.2;
 - (id)init {
     self = [super init];
     if (self) {
-        self.backgroundColor = [UIColor clearColor];
+        [self initialize];
     }
     return self;
+}
+
+- (void)initialize {
+    self.backgroundColor = [UIColor clearColor];
 }
 
 - (id)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        self.backgroundColor = [UIColor clearColor];
+        [self initialize];
     }
     return self;
 }
@@ -35,7 +39,7 @@ static CGFloat const kDefaultLineSpacingRatio = 0.2;
 - (id)initWithCoder:(NSCoder *)aDecoder {
     self = [super initWithCoder:aDecoder];
     if (self) {
-        self.backgroundColor = [UIColor clearColor];
+        [self initialize];
     }
     return self;
 }
@@ -43,7 +47,7 @@ static CGFloat const kDefaultLineSpacingRatio = 0.2;
 - (id)initWithText:(NSString *)text withFont:(UIFont *)font withLineSpacing:(CGFloat)lineSpacing {
     self = [super init];
     if (self) {
-        self.backgroundColor = [UIColor clearColor];
+        [self initialize];
         
         _text = text;
         _font = font;
@@ -120,7 +124,7 @@ static CGFloat const kDefaultLineSpacingRatio = 0.2;
 - (void)render {
     self.isLoading = YES;
     
-    [self.webView loadHTMLString:[NSString stringWithFormat:HELP_HTML_LAYOUT,
+    [self.webView loadHTMLString:[NSString stringWithFormat:HTML_LAYOUT,
                                   [self overflowCode],
                                   self.font.pointSize,
                                   (self.font.pointSize + self.lineSpacing),
@@ -138,20 +142,6 @@ static CGFloat const kDefaultLineSpacingRatio = 0.2;
     }
 }
 
-- (void)setTextToWebView {
-    NSString *escapedText = [self.text stringByReplacingOccurrencesOfString:@"\n" withString:@"\\n"];
-    escapedText = [escapedText stringByReplacingOccurrencesOfString:@"'" withString:@"\\'"];
-    [self.webView stringByEvaluatingJavaScriptFromString:[NSString stringWithFormat:@"setText('%@');", escapedText]];
-}
-
-- (void)resizeViewByWebViewHeight {
-    self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, self.frame.size.width, [self webViewHeight]);
-}
-
-- (CGFloat)webViewHeight {
-    return [[self.webView stringByEvaluatingJavaScriptFromString:@"getHeight()"] floatValue];
-}
-
 - (NSString *)overflowCode {
     switch (_overflow) {
         case TXTextViewOverflowVisible:
@@ -165,10 +155,27 @@ static CGFloat const kDefaultLineSpacingRatio = 0.2;
     }
 }
 
+- (void)setTextToWebView {
+    NSString *escapedText = [self.text stringByReplacingOccurrencesOfString:@"\n" withString:@"\\n"];
+    escapedText = [escapedText stringByReplacingOccurrencesOfString:@"'" withString:@"\\'"];
+    [self.webView stringByEvaluatingJavaScriptFromString:[NSString stringWithFormat:@"setText('%@');", escapedText]];
+}
+
+- (void)resizeViewByWebViewHeight {
+    self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, self.frame.size.width, [self webViewHeight]);
+}
+
+- (CGFloat)webViewHeight {
+    CGFloat height = [[self.webView stringByEvaluatingJavaScriptFromString:@"getHeight()"] floatValue];
+    return height;
+}
+
 #pragma mark - WebView Delegate
 - (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType {
     if ([request.URL.scheme isEqualToString:@"txtextview"]) {
         _text = [_webView stringByEvaluatingJavaScriptFromString:@"document.getElementById('content').innerText"];
+        
+        [[NSNotificationCenter defaultCenter] postNotificationName:kTXTextViewKeyPressedNotification object:self];
     }
     return YES;
 }

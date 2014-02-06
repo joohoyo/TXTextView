@@ -1,5 +1,7 @@
 #import <UIKit/UIKit.h>
 
+static NSString * const kTXTextViewKeyPressedNotification = @"TXTextViewKeyPressedNotification";
+
 typedef enum {
     TXTextViewOverflowVisible = 0,
     TXTextViewOverflowHidden,
@@ -15,5 +17,6 @@ typedef enum {
 @property (nonatomic) TXTextViewOverflow overflow;
 
 - (id)initWithText:(NSString *)text withFont:(UIFont *)font withLineSpacing:(CGFloat)lineSpacing;
+- (CGFloat)webViewHeight;
 
 @end
